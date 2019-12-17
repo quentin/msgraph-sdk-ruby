@@ -262,7 +262,7 @@ module OData
 
     def build_operation(operation_xml)
       binding_type = if operation_xml["IsBound"] == "true"
-        type_name = operation_xml.xpath("./Parameter[@Name='bindingParameter']|./Parameter[@Name='bindingparameter']").first["Type"]
+      type_name = operation_xml.xpath("./Parameter[@Name='bindingParameter']|./Parameter[@Name='bindingparameter']|./Parameter[@Name='bindparameter']|./Parameter[@Name='this']").first["Type"]
         get_type_by_name(type_name)
       end
       entity_set_type = if operation_xml["EntitySetType"]
