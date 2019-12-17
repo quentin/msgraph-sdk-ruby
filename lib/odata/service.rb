@@ -171,12 +171,17 @@ module OData
       if odata_type_string = parsed_response["@odata.type"]
         get_type_by_name(type_name_from_odata_type_field(odata_type_string))
       elsif context = parsed_response["@odata.context"]
-        singular, segments = segments_from_odata_context_field(context)
-        first_entity_type = get_type_by_name("Collection(#{entity_set_by_name(segments.shift).member_type})")
-        entity_type = segments.reduce(first_entity_type) do |last_entity_type, segment|
-          last_entity_type.member_type.navigation_property_by_name(segment).type
+        case context
+        when /#(Collection\(.+\))/
+          get_type_by_name($1)
+        else
+          singular, segments = segments_from_odata_context_field(context)
+          first_entity_type = get_type_by_name("Collection(#{entity_set_by_name(segments.shift).member_type})")
+          entity_type = segments.reduce(first_entity_type) do |last_entity_type, segment|
+            last_entity_type.member_type.navigation_property_by_name(segment).type
+          end
+          singular && entity_type.respond_to?(:member_type) ? entity_type.member_type : entity_type
         end
-        singular && entity_type.respond_to?(:member_type) ? entity_type.member_type : entity_type
       end
     end
 
@@ -223,7 +228,9 @@ module OData
     end
 
     def segments_from_odata_context_field(odata_context_field)
-      segments = odata_context_field.split("$metadata#").last.split("/").map { |s| s.split("(").first }
+      segments = odata_context_field.split("$metadata#").last.split("/").map do |s| 
+        s.split("(").first
+      end
       segments.pop if singular = segments.last == "$entity"
       [singular, segments]
     end
